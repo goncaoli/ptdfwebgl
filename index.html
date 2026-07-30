@@ -1,153 +1,171 @@
 <!DOCTYPE html>
-<html lang="pt">
-<head>
+<html lang="en-us">
+  <head>
     <meta charset="utf-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-
-    <title>DutyFree AR</title>
-
+    <title>Unity WebGL Player | DutyFreeAR</title>
+    <meta name="description" content="">
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
-
     <style>
-        /* Remover marcas de água do WebXR Export */
-        #unity-webxr-link {
-            display: none !important;
-        }
-        #unity-webgl-logo {
-            display: none !important;
-        }
-        #unity-logo {
-            display: none !important;
-        }
-        #unity-footer {
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+      /* Esconde as marcas de água do Unity/WebGL/WebXR/nome do build */
+      #unity-webgl-logo,
+      #unity-webxr-link,
+      #unity-build-title,
+      #unity-logo,
+      #entervr,
+      #enterar {
+        display: none !important;
+      }
+
+      /* Ecrã de entrada em full screen, substitui os botões técnicos */
+      #ar-start-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      #ar-start-overlay p {
+        font-size: 20px;
+        margin-top: 16px;
+      }
+
+      #ar-start-overlay.hidden {
+        display: none;
+      }
     </style>
-</head>
-
-<body>
-<div id="unity-container">
-    <div id="unity-canvas-container" style="width: 100%; height: 100%;">
+  </head>
+  <body>
+    <div id="unity-container">
+      <div id="unity-canvas-container" style="width: 100%; height: 100%;">
         <canvas id="unity-canvas" style="width: 100%; height: 100%;"></canvas>
-    </div>
-
-    <div id="unity-loading-bar">
+      </div>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
-            <div id="unity-progress-bar-full"></div>
+          <div id="unity-progress-bar-full"></div>
         </div>
+      </div>
+      <div id="unity-footer">
+        <div id="unity-webgl-logo"></div>
+        <button id="entervr" value="Enter VR" disabled>VR</button>
+        <button id="enterar" value="Enter AR" disabled>AR</button>
+        <div id="unity-webxr-link">Using <a href="https://github.com/De-Panther/unity-webxr-export" target="_blank" title="WebXR Export">WebXR Export</a></div>
+        <div id="unity-build-title">DutyFreeAR</div>
+      </div>
     </div>
 
-    <div id="unity-footer">
-        <button id="entervr" disabled>VR</button>
-        <button id="enterar" disabled>AR</button>
-        <div id="unity-build-title">DutyFree AR</div>
+    <!-- Ecrã de entrada: o toque aqui é o "gesto do utilizador" exigido pelo browser para arrancar o AR -->
+    <div id="ar-start-overlay">
+      <p>Toca para começar</p>
     </div>
-</div>
 
-<script>
-    var buildUrl = "Build";
-    var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
-
-    var config = {
-        dataUrl: buildUrl + "/dcc9f3ae4c70f7542cb9dbb9f02a0d4f.data",
+    <script>
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/8463eba77730e142ba378c3d68d2e43c.data",
         frameworkUrl: buildUrl + "/2527f42579794508f16440d202a2f229.framework.js",
         codeUrl: buildUrl + "/1ef322908d55c3fce4d942c69c8e7b6b.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Capgemini",
         productName: "DutyFreeAR",
-        productVersion: "1.0"
-    };
+        productVersion: "1.0",
+      };
 
-    var canvas = document.querySelector("#unity-canvas");
-    var loadingBar = document.querySelector("#unity-loading-bar");
-    var progressBarFull = document.querySelector("#unity-progress-bar-full");
-    var unityInstance = null;
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+      var canvasContainer = document.querySelector("#unity-canvas-container");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var arStartOverlay = document.querySelector("#ar-start-overlay");
+      var unityInstance = null;
+      var arSupported = false;
+      
 
-    loadingBar.style.display = "block";
+      loadingBar.style.display = "block";
 
-    var script = document.createElement("script");
-    script.src = loaderUrl;
-
-    script.onload = () => {
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
-            progressBarFull.style.width = (progress * 100) + "%";
+          progressBarFull.style.width = 100 * progress + "%";
         }).then((instance) => {
-            unityInstance = instance;
-            loadingBar.style.display = "none";
+          unityInstance = instance;
+
+          // Lê o payload do fragmento da URL (#data=...), não do query string (?data=...)
+          // O fragmento nunca é enviado ao servidor, por isso não tem limite de tamanho,
+          // ao contrário do query string que estava a dar erro 414 URI Too Long.
+          const hash = window.location.hash.substring(1); // remove o '#' inicial
+          const params = new URLSearchParams(hash);
+          const rawData = params.get('data');
+          const json = rawData ? decodeURIComponent(rawData) : null;
+
+          if (json) {
+            unityInstance.SendMessage(
+              'CartReceiverObject',
+              'ReceberDadosJSON',
+              json
+            );
+          }
+
+          loadingBar.style.display = "none";
+          if (fullscreenButton)
+          {
+            fullscreenButton.onclick = () => {
+              unityInstance.SetFullscreen(1);
+            };
+          }
         }).catch((message) => {
-            alert(message);
+          alert(message);
         });
-    };
+      };
+      document.body.appendChild(script);
 
-    document.body.appendChild(script);
+      let enterARButton = document.getElementById('enterar');
+      let enterVRButton = document.getElementById('entervr');
 
-    /* -----------------------------
-       ENVIO DO CARRINHO PARA UNITY
-       ----------------------------- */
-
-    function sendCartToUnity(cart) {
-        if (!unityInstance) {
-            console.log("Unity ainda não está pronto, a tentar novamente...");
-            setTimeout(() => sendCartToUnity(cart), 500);
-            return;
-        }
-
-        console.log("Carrinho enviado para Unity:", cart);
-        unityInstance.SendMessage("CartReceiver", "ReceberDadosJSON", JSON.stringify(cart));
-    }
-
-    function readCartFromURL() {
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const dataParam = params.get("data");
-
-        if (!dataParam) {
-            console.log("Nenhum carrinho encontrado no URL.");
-            return;
-        }
-
-        try {
-            const decoded = decodeURIComponent(dataParam);
-            const cartData = JSON.parse(decoded);
-            sendCartToUnity(cartData);
-        } catch (e) {
-            console.error("Erro ao processar carrinho:", e);
-        }
-    }
-
-    // Ler carrinho após load
-    window.addEventListener("load", readCartFromURL);
-
-    /* -----------------------------
-       BOTÕES AR / VR
-       ----------------------------- */
-
-    let enterARButton = document.getElementById('enterar');
-    let enterVRButton = document.getElementById('entervr');
-
-    document.addEventListener('onARSupportedCheck', function (event) {
+      document.addEventListener('onARSupportedCheck', function (event) {
         enterARButton.disabled = !event.detail.supported;
-    });
-
-    document.addEventListener('onVRSupportedCheck', function (event) {
+        arSupported = event.detail.supported;
+      }, false);
+      document.addEventListener('onVRSupportedCheck', function (event) {
         enterVRButton.disabled = !event.detail.supported;
-    });
+      }, false);
 
-    enterARButton.addEventListener('click', function () {
+      enterARButton.addEventListener('click', function (event) {
         unityInstance.Module.WebXR.toggleAR();
-    });
-
-    enterVRButton.addEventListener('click', function () {
+      }, false);
+      enterVRButton.addEventListener('click', function (event) {
         unityInstance.Module.WebXR.toggleVR();
-    });
-</script>
+      }, false);
 
-</body>
+      // O toque no overlay é o gesto de utilizador exigido pelo WebXR para arrancar o AR.
+      // Não é possível arrancar automaticamente sem este toque - é uma exigência de segurança do browser.
+      arStartOverlay.addEventListener('click', function () {
+        if (unityInstance && arSupported) {
+          unityInstance.Module.WebXR.toggleAR();
+          arStartOverlay.classList.add('hidden');
+        } else if (unityInstance) {
+          alert('Este dispositivo ou browser não suporta Realidade Aumentada.');
+        } else {
+          alert('A carregar, por favor aguarda mais alguns segundos e tenta novamente.');
+        }
+      });
+    </script>
+  </body>
 </html>
