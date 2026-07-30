@@ -8,6 +8,45 @@
     <meta name="description" content="">
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <style>
+      /* Esconde as marcas de água do Unity/WebGL/WebXR/nome do build */
+      #unity-webgl-logo,
+      #unity-webxr-link,
+      #unity-build-title,
+      #unity-logo,
+      #entervr,
+      #enterar {
+        display: none !important;
+      }
+
+      /* Ecrã de entrada em full screen, substitui os botões técnicos */
+      #ar-start-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      #ar-start-overlay p {
+        font-size: 20px;
+        margin-top: 16px;
+      }
+
+      #ar-start-overlay.hidden {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div id="unity-container">
@@ -28,6 +67,12 @@
         <div id="unity-build-title">DutyFreeAR</div>
       </div>
     </div>
+
+    <!-- Ecrã de entrada: o toque aqui é o "gesto do utilizador" exigido pelo browser para arrancar o AR -->
+    <div id="ar-start-overlay">
+      <p>Toca para começar</p>
+    </div>
+
     <script>
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/bb0d9ecdb05db3e84da20bd14a4f84dc.loader.js";
@@ -46,7 +91,9 @@
       var loadingBar = document.querySelector("#unity-loading-bar");
       var progressBarFull = document.querySelector("#unity-progress-bar-full");
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var arStartOverlay = document.querySelector("#ar-start-overlay");
       var unityInstance = null;
+      var arSupported = false;
 
       loadingBar.style.display = "block";
       var script = document.createElement("script");
@@ -85,20 +132,39 @@
         });
       };
       document.body.appendChild(script);
+
       let enterARButton = document.getElementById('enterar');
       let enterVRButton = document.getElementById('entervr');
+
       document.addEventListener('onARSupportedCheck', function (event) {
         enterARButton.disabled = !event.detail.supported;
+        arSupported = event.detail.supported;
       }, false);
       document.addEventListener('onVRSupportedCheck', function (event) {
         enterVRButton.disabled = !event.detail.supported;
       }, false);
+
       enterARButton.addEventListener('click', function (event) {
         unityInstance.Module.WebXR.toggleAR();
       }, false);
       enterVRButton.addEventListener('click', function (event) {
         unityInstance.Module.WebXR.toggleVR();
       }, false);
+
+      // O toque no overlay é o gesto de utilizador exigido pelo WebXR para arrancar o AR.
+      // Não é possível arrancar automaticamente sem este toque - é uma exigência de segurança do browser.
+      arStartOverlay.addEventListener('click', function () {
+        if (unityInstance && arSupported) {
+          unityInstance.Module.WebXR.toggleAR();
+          arStartOverlay.classList.add('hidden');
+        } else if (unityInstance) {
+          // AR não suportado neste dispositivo/browser
+          alert('Este dispositivo ou browser não suporta Realidade Aumentada.');
+        } else {
+          // Unity ainda não carregou - tenta novamente daqui a pouco
+          alert('A carregar, por favor aguarda mais alguns segundos e tenta novamente.');
+        }
+      });
     </script>
   </body>
 </html>
