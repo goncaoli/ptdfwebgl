@@ -19,28 +19,56 @@
         display: none !important;
       }
 
-      /* Ecrã de entrada em full screen, substitui os botões técnicos */
+      /* Ecrã de entrada em full screen, design DCX */
       #ar-start-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(0, 0, 0, 0.72);
         color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         z-index: 9999;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
         text-align: center;
-        cursor: pointer;
+        padding: 24px;
+        box-sizing: border-box;
       }
 
-      #ar-start-overlay p {
-        font-size: 20px;
-        margin-top: 16px;
+      #ar-start-icon {
+        width: 84px;
+        height: 84px;
+        margin-bottom: 28px;
+      }
+
+      #ar-start-text {
+        font-size: 26px;
+        font-weight: 600;
+        line-height: 1.35;
+        max-width: 320px;
+        margin: 0 0 40px 0;
+      }
+
+      #ar-start-button {
+        background: #F4D93E;
+        color: #1a1a1a;
+        font-size: 18px;
+        font-weight: 700;
+        border: none;
+        border-radius: 32px;
+        padding: 18px 40px;
+        width: 100%;
+        max-width: 340px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      #ar-start-button:active {
+        opacity: 0.85;
       }
 
       #ar-start-overlay.hidden {
@@ -68,9 +96,18 @@
       </div>
     </div>
 
-    <!-- Ecrã de entrada: o toque aqui é o "gesto do utilizador" exigido pelo browser para arrancar o AR -->
+    <!-- Ecrã de entrada: o toque no botão é o "gesto do utilizador" exigido pelo browser para arrancar o AR -->
     <div id="ar-start-overlay">
-      <p>Toca para começar</p>
+      <svg id="ar-start-icon" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 22V10a6 6 0 0 1 6-6h12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <path d="M62 4h12a6 6 0 0 1 6 6v12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <path d="M80 62v12a6 6 0 0 1-6 6H62" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <path d="M22 80H10a6 6 0 0 1-6-6V62" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <path d="M42 22c-9.4 0-17 7.6-17 17 0 12.75 17 29 17 29s17-16.25 17-29c0-9.4-7.6-17-17-17z" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="42" cy="39" r="6" stroke="#fff" stroke-width="3"/>
+      </svg>
+      <p id="ar-start-text">Tudo pronto para a tua experiência em Realidade Aumentada</p>
+      <button id="ar-start-button">Começar a navegação</button>
     </div>
 
     <script>
@@ -93,6 +130,7 @@
       var progressBarFull = document.querySelector("#unity-progress-bar-full");
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var arStartOverlay = document.querySelector("#ar-start-overlay");
+      var arStartButton = document.querySelector("#ar-start-button");
       var unityInstance = null;
       var arSupported = false;
       
@@ -154,9 +192,9 @@
         unityInstance.Module.WebXR.toggleVR();
       }, false);
 
-      // O toque no overlay é o gesto de utilizador exigido pelo WebXR para arrancar o AR.
+      // O toque no botão é o gesto de utilizador exigido pelo WebXR para arrancar o AR.
       // Não é possível arrancar automaticamente sem este toque - é uma exigência de segurança do browser.
-      arStartOverlay.addEventListener('click', function () {
+      arStartButton.addEventListener('click', function () {
         if (unityInstance && arSupported) {
           unityInstance.Module.WebXR.toggleAR();
           arStartOverlay.classList.add('hidden');
