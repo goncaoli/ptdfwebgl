@@ -40,7 +40,6 @@
         productName: "DutyFreeAR",
         productVersion: "1.0",
       };
-
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
       var canvasContainer = document.querySelector("#unity-canvas-container");
@@ -48,10 +47,8 @@
       var progressBarFull = document.querySelector("#unity-progress-bar-full");
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var unityInstance = null;
-      
 
       loadingBar.style.display = "block";
-
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
@@ -59,18 +56,23 @@
           progressBarFull.style.width = 100 * progress + "%";
         }).then((instance) => {
           unityInstance = instance;
-		  
-		const params = new URLSearchParams(window.location.search);
-		const json = params.get('data');
 
-		if (json) {
-			unityInstance.SendMessage(
-				'CartReceiverObject',
-				'ReceberDadosJSON',
-				json
-			);
-		
-			}
+          // Lê o payload do fragmento da URL (#data=...), não do query string (?data=...)
+          // O fragmento nunca é enviado ao servidor, por isso não tem limite de tamanho,
+          // ao contrário do query string que estava a dar erro 414 URI Too Long.
+          const hash = window.location.hash.substring(1); // remove o '#' inicial
+          const params = new URLSearchParams(hash);
+          const rawData = params.get('data');
+          const json = rawData ? decodeURIComponent(rawData) : null;
+
+          if (json) {
+            unityInstance.SendMessage(
+              'CartReceiverObject',
+              'ReceberDadosJSON',
+              json
+            );
+          }
+
           loadingBar.style.display = "none";
           if (fullscreenButton)
           {
@@ -83,17 +85,14 @@
         });
       };
       document.body.appendChild(script);
-
       let enterARButton = document.getElementById('enterar');
       let enterVRButton = document.getElementById('entervr');
-
       document.addEventListener('onARSupportedCheck', function (event) {
         enterARButton.disabled = !event.detail.supported;
       }, false);
       document.addEventListener('onVRSupportedCheck', function (event) {
         enterVRButton.disabled = !event.detail.supported;
       }, false);
-
       enterARButton.addEventListener('click', function (event) {
         unityInstance.Module.WebXR.toggleAR();
       }, false);
