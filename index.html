@@ -13,7 +13,6 @@
       #unity-webgl-logo,
       #unity-webxr-link,
       #unity-build-title,
-      #unity-logo,
       #entervr,
       #enterar {
         display: none !important;
@@ -28,7 +27,7 @@
         height: 100%;
         background: rgba(0, 0, 0, 0.72);
         color: #fff;
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         flex-direction: column;
@@ -37,6 +36,11 @@
         text-align: center;
         padding: 24px;
         box-sizing: border-box;
+      }
+
+      /* Só aparece depois de o Unity terminar de carregar (classe adicionada via JS) */
+      #ar-start-overlay.visible {
+        display: flex;
       }
 
       #ar-start-icon {
@@ -70,10 +74,6 @@
       #ar-start-button:active {
         opacity: 0.85;
       }
-
-      #ar-start-overlay.hidden {
-        display: none;
-      }
     </style>
   </head>
   <body>
@@ -96,7 +96,8 @@
       </div>
     </div>
 
-    <!-- Ecrã de entrada: o toque no botão é o "gesto do utilizador" exigido pelo browser para arrancar o AR -->
+    <!-- Ecrã de entrada: começa escondido, só aparece quando o Unity terminar de carregar.
+         O toque no botão é o "gesto do utilizador" exigido pelo browser para arrancar o AR. -->
     <div id="ar-start-overlay">
       <svg id="ar-start-icon" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 22V10a6 6 0 0 1 6-6h12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
@@ -114,9 +115,9 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
       var config = {
-        dataUrl: buildUrl + "/9bc5450d1e15aaab38df4b40cf5782d1.data",
+        dataUrl: buildUrl + "/6ccbcf714ad2129136e88eee4742bb04.data",
         frameworkUrl: buildUrl + "/0d5d5e22a290dfbeea71836ffe898188.framework.js",
-        codeUrl: buildUrl + "/a088d33fc27c389fb224c3380817b131.wasm",
+        codeUrl: buildUrl + "/de5aea87086841c18dd92b742ed6bb95.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Capgemini",
         productName: "DutyFreeAR",
@@ -157,6 +158,11 @@
           unityInstance = instance;
 
           loadingBar.style.display = "none";
+
+          // Só agora, com o Unity totalmente carregado (loading/splash já terminados),
+          // é que mostramos o nosso ecrã "Começar a navegação".
+          arStartOverlay.classList.add("visible");
+
           if (fullscreenButton)
           {
             fullscreenButton.onclick = () => {
@@ -192,7 +198,7 @@
       arStartButton.addEventListener('click', function () {
         if (unityInstance && arSupported) {
           unityInstance.Module.WebXR.toggleAR();
-          arStartOverlay.classList.add('hidden');
+          arStartOverlay.classList.remove("visible");
 
           // Só agora enviamos o carrinho para o Unity, com a sessão AR já a arrancar,
           // para o jogador/câmara já estar (ou já em vias de estar) na posição real.
