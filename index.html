@@ -20,8 +20,8 @@
         display: none !important;
       }
 
-      /* Ecrã de entrada em full screen, design DCX */
-      #ar-start-overlay {
+      /* Estilo partilhado pelos dois ecrãs em overlay (inicial e final) */
+      .app-overlay {
         position: fixed;
         top: 0;
         left: 0;
@@ -40,26 +40,34 @@
         box-sizing: border-box;
       }
 
-      /* Só aparece depois de o Unity terminar de carregar E o splash "Made with Unity" terminar (classe adicionada via JS) */
-      #ar-start-overlay.visible {
+      .app-overlay.visible {
         display: flex;
       }
 
-      #ar-start-icon {
+      .app-overlay-icon {
         width: 84px;
         height: 84px;
         margin-bottom: 28px;
       }
 
-      #ar-start-text {
+      .app-overlay-text {
         font-size: 26px;
         font-weight: 600;
         line-height: 1.35;
         max-width: 320px;
-        margin: 0 0 40px 0;
+        margin: 0 0 12px 0;
       }
 
-      #ar-start-button {
+      .app-overlay-subtext {
+        font-size: 18px;
+        font-weight: 400;
+        line-height: 1.4;
+        max-width: 300px;
+        margin: 0 0 40px 0;
+        opacity: 0.9;
+      }
+
+      .app-overlay-button {
         background: #F4D93E;
         color: #1a1a1a;
         font-size: 18px;
@@ -73,7 +81,7 @@
         font-family: inherit;
       }
 
-      #ar-start-button:active {
+      .app-overlay-button:active {
         opacity: 0.85;
       }
     </style>
@@ -101,8 +109,8 @@
     <!-- Ecrã de entrada: começa escondido, só aparece depois do Unity carregar E do
          splash "Made with Unity" terminar. O toque no botão é o "gesto do utilizador"
          exigido pelo browser para arrancar o AR. -->
-    <div id="ar-start-overlay">
-      <svg id="ar-start-icon" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div id="ar-start-overlay" class="app-overlay">
+      <svg class="app-overlay-icon" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 22V10a6 6 0 0 1 6-6h12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
         <path d="M62 4h12a6 6 0 0 1 6 6v12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
         <path d="M80 62v12a6 6 0 0 1-6 6H62" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
@@ -110,16 +118,29 @@
         <path d="M42 22c-9.4 0-17 7.6-17 17 0 12.75 17 29 17 29s17-16.25 17-29c0-9.4-7.6-17-17-17z" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
         <circle cx="42" cy="39" r="6" stroke="#fff" stroke-width="3"/>
       </svg>
-      <p id="ar-start-text">Tudo pronto para a tua experiência em Realidade Aumentada</p>
-      <button id="ar-start-button">Começar a navegação</button>
+      <p class="app-overlay-text">Tudo pronto para a tua experiência em Realidade Aumentada</p>
+      <button id="ar-start-button" class="app-overlay-button">Começar a navegação</button>
+    </div>
+
+    <!-- Ecrã final: mostrado pelo Unity (via plugin JS) quando o percurso termina
+         (nao ha mais produtos no carrinho). O botao "Voltar a app" navega para o
+         urlBack recebido no carrinho, saindo da experiencia AR. -->
+    <div id="route-finished-overlay" class="app-overlay">
+      <svg class="app-overlay-icon" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M42 4C21 4 4 21 4 42s17 38 38 38 38-17 38-38S63 4 42 4z" stroke="#fff" stroke-width="3"/>
+        <path d="M28 42l10 10 18-20" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <p class="app-overlay-text">O teu percurso termina aqui.</p>
+      <p class="app-overlay-subtext">Mostra o QR Code na caixa para validar a saída</p>
+      <button id="route-finished-button" class="app-overlay-button">Voltar a app</button>
     </div>
 
     <script>
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
       var config = {
-        dataUrl: buildUrl + "/6ddcdbed792294c0bf2f61199569a2d2.data",
-        frameworkUrl: buildUrl + "/76b4620b5931dfce121df21efc9882fe.framework.js",
+        dataUrl: buildUrl + "/ba63a1ca7b342372540e79591aa74cc6.data",
+        frameworkUrl: buildUrl + "/d6358e6b268749174f4d05b711cc24b4.framework.js",
         codeUrl: buildUrl + "/db4032ffdea491942f79cb9987abc199.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Capgemini",
@@ -130,7 +151,6 @@
       // Duração aproximada do splash "Made with Unity" (+ eventuais outros logos),
       // em milissegundos. Confirma/ajusta este valor em:
       // Project Settings > Player > Splash Screen > Logos (soma da duração de cada logo).
-      // Se o splash desaparecer antes ou o overlay demorar demais a aparecer, ajusta aqui.
       var splashScreenDurationMs = 3000;
 
       var container = document.querySelector("#unity-container");
@@ -141,20 +161,46 @@
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var arStartOverlay = document.querySelector("#ar-start-overlay");
       var arStartButton = document.querySelector("#ar-start-button");
+      var routeFinishedOverlay = document.querySelector("#route-finished-overlay");
+      var routeFinishedButton = document.querySelector("#route-finished-button");
       var unityInstance = null;
       var arSupported = false;
 
-      // Extrai o payload do carrinho do fragmento da URL (#data=...) já no arranque,
-      // mas só o ENVIAMOS para o Unity mais tarde (ver botão "Começar a navegação"),
-      // depois da sessão AR ter arrancado - para o "sphere" (jogador/câmara) já
-      // estar na posição real trackada pelo WebXR, e não na posição estática da cena.
+      // Extrai o payload do carrinho do fragmento da URL (#data=...) já no arranque.
+      // Guardamos tanto o JSON completo (para enviar ao Unity mais tarde) como o
+      // urlBack em separado (para o nosso proprio botao "Voltar a app" usar, sem
+      // precisar de esperar que o Unity no-lo devolva).
       var pendingCartJson = null;
+      var cartUrlBack = null;
       (function () {
         const hash = window.location.hash.substring(1); // remove o '#' inicial
         const params = new URLSearchParams(hash);
         const rawData = params.get('data');
         pendingCartJson = rawData ? decodeURIComponent(rawData) : null;
+
+        if (pendingCartJson) {
+          try {
+            const parsed = JSON.parse(pendingCartJson);
+            cartUrlBack = parsed.urlBack || null;
+          } catch (e) {
+            console.error("Nao foi possivel extrair urlBack do carrinho:", e);
+          }
+        }
       })();
+
+      // Funcao global chamada pelo Unity (via plugin .jslib) quando o percurso
+      // termina - mostra este ecra sem o Unity precisar de construir UI propria.
+      window.showRouteFinishedOverlay = function () {
+        routeFinishedOverlay.classList.add("visible");
+      };
+
+      routeFinishedButton.addEventListener('click', function () {
+        if (cartUrlBack) {
+          window.top.location.href = cartUrlBack;
+        } else {
+          console.warn("urlBack nao disponivel - nao e possivel voltar a app.");
+        }
+      });
 
       loadingBar.style.display = "block";
 
