@@ -38,7 +38,7 @@
         box-sizing: border-box;
       }
 
-      /* Só aparece depois de o Unity terminar de carregar (classe adicionada via JS) */
+      /* Só aparece depois de o Unity terminar de carregar E o splash "Made with Unity" terminar (classe adicionada via JS) */
       #ar-start-overlay.visible {
         display: flex;
       }
@@ -96,8 +96,9 @@
       </div>
     </div>
 
-    <!-- Ecrã de entrada: começa escondido, só aparece quando o Unity terminar de carregar.
-         O toque no botão é o "gesto do utilizador" exigido pelo browser para arrancar o AR. -->
+    <!-- Ecrã de entrada: começa escondido, só aparece depois do Unity carregar E do
+         splash "Made with Unity" terminar. O toque no botão é o "gesto do utilizador"
+         exigido pelo browser para arrancar o AR. -->
     <div id="ar-start-overlay">
       <svg id="ar-start-icon" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M4 22V10a6 6 0 0 1 6-6h12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
@@ -115,14 +116,20 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
       var config = {
-        dataUrl: buildUrl + "/6ccbcf714ad2129136e88eee4742bb04.data",
+        dataUrl: buildUrl + "9bc5450d1e15aaab38df4b40cf5782d1.data",
         frameworkUrl: buildUrl + "/0d5d5e22a290dfbeea71836ffe898188.framework.js",
-        codeUrl: buildUrl + "/de5aea87086841c18dd92b742ed6bb95.wasm",
+        codeUrl: buildUrl + "a088d33fc27c389fb224c3380817b131.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Capgemini",
         productName: "DutyFreeAR",
         productVersion: "1.0",
       };
+
+      // Duração aproximada do splash "Made with Unity" (+ eventuais outros logos),
+      // em milissegundos. Confirma/ajusta este valor em:
+      // Project Settings > Player > Splash Screen > Logos (soma da duração de cada logo).
+      // Se o splash desaparecer antes ou o overlay demorar demais a aparecer, ajusta aqui.
+      var splashScreenDurationMs = 3000;
 
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
@@ -159,9 +166,13 @@
 
           loadingBar.style.display = "none";
 
-          // Só agora, com o Unity totalmente carregado (loading/splash já terminados),
-          // é que mostramos o nosso ecrã "Começar a navegação".
-          arStartOverlay.classList.add("visible");
+          // O Unity resolve esta promise assim que a instância arranca, o que é
+          // normalmente quando o splash "Made with Unity" COMEÇA a animar, não
+          // quando termina. Por isso esperamos mais um pouco antes de revelar o
+          // nosso overlay, para não sobrepor o splash enquanto ainda está a jogar.
+          setTimeout(() => {
+            arStartOverlay.classList.add("visible");
+          }, splashScreenDurationMs);
 
           if (fullscreenButton)
           {
