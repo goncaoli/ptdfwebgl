@@ -8,6 +8,7 @@
     <meta name="description" content="">
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <script src="jsQR.js"></script>
     <style>
       /* Esconde as marcas de água do Unity/WebGL/WebXR/nome do build.
          Nao esconde #unity-logo de proposito: e o logo de loading que
@@ -139,8 +140,8 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
       var config = {
-        dataUrl: buildUrl + "/ec4b51c2a8d20e3a1d458b98a0e7a186.data",
-        frameworkUrl: buildUrl + "/e47440178327b87948127f15934b1cf7.framework.js",
+        dataUrl: buildUrl + "/7468221e6e58c483b5dd43eaa9602f88.data",
+        frameworkUrl: buildUrl + "/1b89249c3a369a46bf0d821cc784a1d9.framework.js",
         codeUrl: buildUrl + "/65649806de54bb3374c4615adf6f4133.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Capgemini",
@@ -211,6 +212,36 @@
           progressBarFull.style.width = 100 * progress + "%";
         }).then((instance) => {
           unityInstance = instance;
+
+          document.addEventListener(
+            "webxr-qr-detected",
+            function (event) {
+              if (
+                !event.detail ||
+                typeof event.detail.text !== "string" ||
+                event.detail.text.trim().length === 0
+              ) {
+                console.warn(
+                  "[WebXR QR] Empty QR event received."
+                );
+
+                return;
+              }
+
+              const qrText = event.detail.text.trim();
+
+              console.log(
+                "[WebXR QR] Sending QR result to Unity:",
+                qrText
+              );
+
+              unityInstance.SendMessage(
+                "QRRecenterManagerObject",
+                "ReceiveQRCode",
+                qrText
+              );
+            }
+          );
 
           loadingBar.style.display = "none";
 
