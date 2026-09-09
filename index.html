@@ -8,6 +8,7 @@
     <meta name="description" content="">
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <script src="jsQR.js"></script>
     <style>
       /* Esconde as marcas de água do Unity/WebGL/WebXR/nome do build.
          Nao esconde #unity-logo de proposito: e o logo de loading que
@@ -211,6 +212,36 @@
           progressBarFull.style.width = 100 * progress + "%";
         }).then((instance) => {
           unityInstance = instance;
+
+          document.addEventListener(
+            "webxr-qr-detected",
+            function (event) {
+              if (
+                !event.detail ||
+                typeof event.detail.text !== "string" ||
+                event.detail.text.trim().length === 0
+              ) {
+                console.warn(
+                  "[WebXR QR] Empty QR event received."
+                );
+
+                return;
+              }
+
+              const qrText = event.detail.text.trim();
+
+              console.log(
+                "[WebXR QR] Sending QR result to Unity:",
+                qrText
+              );
+
+              unityInstance.SendMessage(
+                "QRRecenterManagerObject",
+                "ReceiveQRCode",
+                qrText
+              );
+            }
+          );
 
           loadingBar.style.display = "none";
 
