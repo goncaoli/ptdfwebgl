@@ -140,9 +140,9 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/a0eb54968f12b724932ff61ec1f2137c.loader.js";
       var config = {
-        dataUrl: buildUrl + "/65788f7773fd5db1bb7a2660e24d302a.data",
-        frameworkUrl: buildUrl + "/957497a3f26818ba2fe35652ca0f01a4.framework.js",
-        codeUrl: buildUrl + "/1a2792c1dfe87da852473e8a788b006f.wasm",
+        dataUrl: buildUrl + "/9edd6da2210c41aec32f427a1e992296.data",
+        frameworkUrl: buildUrl + "/27294b88648d5a86840d499b73a1a0e4.framework.js",
+        codeUrl: buildUrl + "/9f3db016c046a4cf7bba357395f249cb.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Capgemini",
         productName: "DutyFreeAR",
@@ -168,9 +168,9 @@
       var arSupported = false;
 
       // Extrai o payload do carrinho do fragmento da URL (#data=...) já no arranque.
-      // Guardamos tanto o JSON completo (para enviar ao Unity mais tarde) como o
-      // urlBack em separado (para o nosso proprio botao "Voltar a app" usar, sem
-      // precisar de esperar que o Unity no-lo devolva).
+      // Guardamos tanto o JSON completo (para enviar ao Unity mais tarde, so
+      // depois do toque em "Comecar a navegacao") como o urlBack em separado
+      // (para o nosso proprio botao "Voltar a app" usar, sem depender do Unity).
       var pendingCartJson = null;
       var cartUrlBack = null;
       (function () {
@@ -203,6 +203,8 @@
         }
       });
 
+      
+
       loadingBar.style.display = "block";
 
       var script = document.createElement("script");
@@ -213,6 +215,8 @@
         }).then((instance) => {
           unityInstance = instance;
 
+          // Escuta os resultados de leitura de QR code (disparados pelo patch
+          // WebXR/QR) e envia para o QRRecenterManagerObject no Unity.
           document.addEventListener(
             "webxr-qr-detected",
             function (event) {
