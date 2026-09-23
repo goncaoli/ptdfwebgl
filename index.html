@@ -171,6 +171,32 @@
       var unityInstance = null;
       var arSupported = false;
 
+      // CORRECAO: em Android/Chrome, a barra de enderecos pode
+      // aparecer/desaparecer (ex: ao entrar em sessao AR), mudando a altura
+      // REAL do ecra visivel sem que o container do Unity seja recalculado -
+      // isto causa um desfasamento entre a posicao visual dos botoes e onde
+      // o toque realmente regista (mais notorio em telemoveis, onde a barra
+      // de enderecos ocupa uma percentagem maior do ecra do que em tablets).
+      // Forcamos aqui o container a acompanhar sempre a altura real e atual.
+      function syncContainerSize() {
+        var viewportHeight = window.visualViewport
+          ? window.visualViewport.height
+          : window.innerHeight;
+        var viewportWidth = window.visualViewport
+          ? window.visualViewport.width
+          : window.innerWidth;
+
+        container.style.width = viewportWidth + "px";
+        container.style.height = viewportHeight + "px";
+      }
+
+      syncContainerSize();
+      window.addEventListener("resize", syncContainerSize);
+      window.addEventListener("orientationchange", syncContainerSize);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", syncContainerSize);
+      }
+
       // Extrai o payload do carrinho do fragmento da URL (#data=...) já no arranque.
       // Guardamos tanto o JSON completo (para enviar ao Unity mais tarde, so
       // depois do toque em "Comecar a navegacao") como o urlBack em separado
